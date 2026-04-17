@@ -2,8 +2,8 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>經典打磚塊遊戲</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>經典打磚塊遊戲 - 手機版</title>
     <style>
         body {
             background-color: #222;
@@ -15,16 +15,45 @@
             margin: 0;
             color: white;
             font-family: Arial, sans-serif;
+            overflow: hidden; /* 防止手機瀏覽器晃動 */
+            touch-action: none; /* 禁用瀏覽器預設手勢 */
         }
         canvas {
             background: #000;
             border: 4px solid #fff;
-            box-shadow: 0 0 20px rgba(255,255,255,0.2);
-            display: block;
+            max-width: 95%;
+            height: auto;
         }
         .info {
-            margin-top: 15px;
+            margin-top: 10px;
             text-align: center;
+        }
+        /* 手機控制區 */
+        .controls {
+            display: flex;
+            width: 100%;
+            justify-content: space-around;
+            margin-top: 20px;
+            padding: 0 20px;
+            box-sizing: border-box;
+        }
+        .btn {
+            width: 80px;
+            height: 80px;
+            background-color: rgba(255, 255, 255, 0.2);
+            border: 2px solid #fff;
+            border-radius: 50%;
+            color: white;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none;
+        }
+        .btn:active {
+            background-color: rgba(255, 255, 255, 0.5);
         }
     </style>
 </head>
@@ -33,173 +62,21 @@
     <h1>打磚塊挑戰</h1>
     <canvas id="gameCanvas" width="480" height="320"></canvas>
     
+    <div class="controls">
+        <div id="btnLeft" class="btn">左</div>
+        <div id="btnRight" class="btn">右</div>
+    </div>
+
     <div class="info">
-        <p>使用 <b>滑鼠</b> 或 <b>左右方向鍵</b> 移動擋板</p>
-        <button onclick="document.location.reload()" style="padding: 8px 16px; cursor: pointer;">重新開始</button>
+        <button onclick="document.location.reload()" style="padding: 10px 20px; cursor: pointer;">重新開始</button>
     </div>
 
     <script>
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
 
-        // 遊戲參數設定
         let score = 0;
         let ballRadius = 8;
         let x = canvas.width / 2;
         let y = canvas.height - 30;
-        let dx = 2;
-        let dy = -2;
-
-        // 擋板設定
-        let paddleHeight = 10;
-        let paddleWidth = 75;
-        let paddleX = (canvas.width - paddleWidth) / 2;
-        let rightPressed = false;
-        let leftPressed = false;
-
-        // 磚塊設定
-        let brickRowCount = 3;
-        let brickColumnCount = 5;
-        let brickWidth = 75;
-        let brickHeight = 20;
-        let brickPadding = 10;
-        let brickOffsetTop = 30;
-        let brickOffsetLeft = 30;
-
-        let bricks = [];
-        for (let c = 0; c < brickColumnCount; c++) {
-            bricks[c] = [];
-            for (let r = 0; r < brickRowCount; r++) {
-                bricks[c][r] = { x: 0, y: 0, status: 1 };
-            }
-        }
-
-        // 監聽鍵盤與滑鼠
-        document.addEventListener("keydown", keyDownHandler, false);
-        document.addEventListener("keyup", keyUpHandler, false);
-        document.addEventListener("mousemove", mouseMoveHandler, false);
-
-        function keyDownHandler(e) {
-            if (e.key === "Right" || e.key === "ArrowRight") rightPressed = true;
-            else if (e.key === "Left" || e.key === "ArrowLeft") leftPressed = true;
-        }
-
-        function keyUpHandler(e) {
-            if (e.key === "Right" || e.key === "ArrowRight") rightPressed = false;
-            else if (e.key === "Left" || e.key === "ArrowLeft") leftPressed = false;
-        }
-
-        function mouseMoveHandler(e) {
-            let relativeX = e.clientX - canvas.offsetLeft;
-            if (relativeX > 0 && relativeX < canvas.width) {
-                paddleX = relativeX - paddleWidth / 2;
-            }
-        }
-
-        // 碰撞偵測
-        function collisionDetection() {
-            for (let c = 0; c < brickColumnCount; c++) {
-                for (let r = 0; r < brickRowCount; r++) {
-                    let b = bricks[c][r];
-                    if (b.status === 1) {
-                        if (x > b.x && x < b.x + brickWidth && y > b.y && y < b.y + brickHeight) {
-                            dy = -dy;
-                            b.status = 0;
-                            score++;
-                            if (score === brickRowCount * brickColumnCount) {
-                                alert("恭喜破關！你贏了！");
-                                document.location.reload();
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        // 繪製球體
-        function drawBall() {
-            ctx.beginPath();
-            ctx.arc(x, y, ballRadius, 0, Math.PI * 2);
-            ctx.fillStyle = "#00FFDD";
-            ctx.fill();
-            ctx.closePath();
-        }
-
-        // 繪製擋板
-        function drawPaddle() {
-            ctx.beginPath();
-            ctx.rect(paddleX, canvas.height - paddleHeight, paddleWidth, paddleHeight);
-            ctx.fillStyle = "#FFFFFF";
-            ctx.fill();
-            ctx.closePath();
-        }
-
-        // 繪製磚塊
-        function drawBricks() {
-            for (let c = 0; c < brickColumnCount; c++) {
-                for (let r = 0; r < brickRowCount; r++) {
-                    if (bricks[c][r].status === 1) {
-                        let brickX = (c * (brickWidth + brickPadding)) + brickOffsetLeft;
-                        let brickY = (r * (brickHeight + brickPadding)) + brickOffsetTop;
-                        bricks[c][r].x = brickX;
-                        bricks[c][r].y = brickY;
-                        ctx.beginPath();
-                        ctx.rect(brickX, brickY, brickWidth, brickHeight);
-                        ctx.fillStyle = "#FF5733";
-                        ctx.fill();
-                        ctx.closePath();
-                    }
-                }
-            }
-        }
-
-        function drawScore() {
-            ctx.font = "16px Arial";
-            ctx.fillStyle = "#FFFFFF";
-            ctx.fillText("分數: " + score, 8, 20);
-        }
-
-        // 遊戲主迴圈
-        function draw() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            drawBricks();
-            drawBall();
-            drawPaddle();
-            drawScore();
-            collisionDetection();
-
-            // 碰到左右牆壁
-            if (x + dx > canvas.width - ballRadius || x + dx < ballRadius) {
-                dx = -dx;
-            }
-            // 碰到頂部
-            if (y + dy < ballRadius) {
-                dy = -dy;
-            } 
-            // 碰到下方（判斷是否接到球）
-            else if (y + dy > canvas.height - ballRadius) {
-                if (x > paddleX && x < paddleX + paddleWidth) {
-                    dy = -dy;
-                } else {
-                    alert("遊戲結束！");
-                    document.location.reload();
-                    return; 
-                }
-            }
-
-            // 擋板移動
-            if (rightPressed && paddleX < canvas.width - paddleWidth) {
-                paddleX += 7;
-            } else if (leftPressed && paddleX > 0) {
-                paddleX -= 7;
-            }
-
-            x += dx;
-            y += dy;
-            requestAnimationFrame(draw);
-        }
-
-        draw();
-    </script>
-</body>
-</html>
+        let dx = 3; // 稍微
